@@ -50,6 +50,46 @@ html {
     scroll-behavior: smooth;
 }
 
+/* RTL Support for Arabic */
+[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+}
+
+[dir="rtl"] .nav-menu {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .hero-buttons {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .about-stats {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .project-links {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .contact-content {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .social-links {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .language-menu {
+    right: auto;
+    left: 0;
+}
+
+[dir="rtl"] .language-toggle .fa-chevron-down {
+    margin-left: 0;
+    margin-right: 5px;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     line-height: 1.6;

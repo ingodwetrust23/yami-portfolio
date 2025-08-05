@@ -2,7 +2,7 @@
 const config = {
     // Development (local)
     development: {
-        backendUrl: 'http://localhost:5000'
+        backendUrl: 'http://localhost:3001'
     },
     // Production (deployed)
     production: {

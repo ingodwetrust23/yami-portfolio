@@ -39,44 +39,83 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
     formMessage.textContent = '';
     formMessage.className = '';
 
+    // Get current language for translations
+    const currentLang = document.documentElement.getAttribute('lang') || 'en';
+    const t = window.translations[currentLang].contact.formMessages;
+    
     // Validation
     if (!name || !email || !subject || !message) {
-        showFormMessage('Please fill in all fields.', 'error');
+        showFormMessage(t.fillAllFields, 'error');
         return;
     }
 
     if (!validateEmail(email)) {
-        showFormMessage('Please enter a valid email address.', 'error');
+        showFormMessage(t.validEmail, 'error');
         return;
     }
 
-    // Send to backend API
-    showFormMessage('Sending message...', 'info');
+    // Send to Firebase directly
+    showFormMessage(t.sending, 'info');
     
-    fetch(`${window.BACKEND_URL}/api/contact`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    // Use Firebase directly
+    if (window.firebaseDB) {
+        window.firebaseDB.collection('contacts').add({
             name: name,
             email: email,
-            message: message
+            subject: subject,
+            message: message,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message) {
-            showFormMessage('Thank you! Your message has been sent successfully.', 'success');
-            document.getElementById('contact-form').reset();
-        } else {
-            showFormMessage('Error sending message. Please try again.', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showFormMessage('Error sending message. Please try again.', 'error');
-    });
+        .then(() => {
+            // Also log to server for console output
+            fetch(`${window.BACKEND_URL}/api/log-firebase`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    subject: subject,
+                    message: message
+                })
+            }).catch(err => console.log('Server logging failed:', err));
+            
+                                    showFormMessage(t.success, 'success');
+                        document.getElementById('contact-form').reset();
+                    })
+                    .catch(error => {
+                        console.error('Firebase Error:', error);
+                        showFormMessage(t.error, 'error');
+                    });
+    } else {
+        // Fallback to backend API if Firebase is not available
+        fetch(`${window.BACKEND_URL}/api/contact`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: name,
+                email: email,
+                subject: subject,
+                message: message
+            })
+        })
+        .then(response => response.json())
+                            .then(data => {
+                        if (data.message) {
+                            showFormMessage(t.success, 'success');
+                            document.getElementById('contact-form').reset();
+                        } else {
+                            showFormMessage(t.error, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showFormMessage(t.error, 'error');
+                    });
+    }
 });
 
 // Email validation function
@@ -266,6 +305,94 @@ const languageDropdown = document.querySelector('.language-dropdown');
 const langText = document.querySelector('.lang-text');
 const languageOptions = document.querySelectorAll('.language-option');
 
+// Function to translate the page content
+function translatePage(lang) {
+    const t = window.translations[lang];
+    
+    // Navigation
+    document.querySelector('a[href="#home"]').textContent = t.nav.home;
+    document.querySelector('a[href="#about"]').textContent = t.nav.about;
+    document.querySelector('a[href="#skills"]').textContent = t.nav.skills;
+    document.querySelector('a[href="#projects"]').textContent = t.nav.projects;
+    document.querySelector('a[href="#contact"]').textContent = t.nav.contact;
+    
+    // Hero Section
+    const heroTitle = document.querySelector('.hero-title');
+    const nameSpan = heroTitle.querySelector('.highlight');
+    heroTitle.innerHTML = `${t.hero.title} <span class="highlight">${nameSpan.textContent}</span>`;
+    
+    document.querySelector('.hero-subtitle').textContent = t.hero.subtitle;
+    document.querySelector('.hero-description').textContent = t.hero.description;
+    document.querySelector('.hero-buttons .btn-primary').textContent = t.hero.viewWork;
+    document.querySelector('.hero-buttons .btn-secondary').textContent = t.hero.getInTouch;
+    
+    // About Section
+    document.querySelector('#about .section-title').textContent = t.about.title;
+    const aboutParagraphs = document.querySelectorAll('#about .about-text p');
+    aboutParagraphs[0].textContent = t.about.paragraph1;
+    aboutParagraphs[1].textContent = t.about.paragraph2;
+    aboutParagraphs[2].textContent = t.about.paragraph3;
+    
+    const stats = document.querySelectorAll('#about .stat p');
+    stats[0].textContent = t.about.yearsExperience;
+    stats[1].textContent = t.about.projectsCompleted;
+    stats[2].textContent = t.about.happyClients;
+    stats[3].textContent = t.about.clientSatisfaction;
+    
+    // Skills Section
+    document.querySelector('#skills .section-title').textContent = t.skills.title;
+    const skillCategories = document.querySelectorAll('#skills .skill-category h3');
+    skillCategories[0].innerHTML = `<i class="fab fa-html5"></i> ${t.skills.frontend}`;
+    skillCategories[1].innerHTML = `<i class="fas fa-server"></i> ${t.skills.backend}`;
+    skillCategories[2].innerHTML = `<i class="fas fa-tools"></i> ${t.skills.tools}`;
+    
+    // Update specific skill items that have translations
+    const skillItems = document.querySelectorAll('#skills .skill-item span');
+    skillItems.forEach(item => {
+        if (item.textContent === 'Responsive Design') {
+            item.textContent = t.skills.responsiveDesign;
+        } else if (item.textContent === 'Performance Optimization') {
+            item.textContent = t.skills.performanceOptimization;
+        }
+    });
+    
+    // Projects Section
+    document.querySelector('#projects .section-title').textContent = t.projects.title;
+    
+    const projectCards = document.querySelectorAll('#projects .project-card');
+    projectCards[0].querySelector('h3').textContent = t.projects.ecommerce.title;
+    projectCards[0].querySelector('p').textContent = t.projects.ecommerce.description;
+    projectCards[1].querySelector('h3').textContent = t.projects.taskManager.title;
+    projectCards[1].querySelector('p').textContent = t.projects.taskManager.description;
+    projectCards[2].querySelector('h3').textContent = t.projects.analytics.title;
+    projectCards[2].querySelector('p').textContent = t.projects.analytics.description;
+    
+    const projectLinks = document.querySelectorAll('#projects .project-link');
+    projectLinks.forEach((link, index) => {
+        if (index % 2 === 0) {
+            link.innerHTML = `<i class="fas fa-external-link-alt"></i> ${t.projects.liveDemo}`;
+        } else {
+            link.innerHTML = `<i class="fab fa-github"></i> ${t.projects.code}`;
+        }
+    });
+    
+    // Contact Section
+    document.querySelector('#contact .section-title').textContent = t.contact.title;
+    document.querySelector('#contact h3').textContent = t.contact.subtitle;
+    document.querySelector('#contact .contact-info p').textContent = t.contact.description;
+    
+    const formLabels = document.querySelectorAll('#contact-form label');
+    formLabels[0].textContent = t.contact.name;
+    formLabels[1].textContent = t.contact.email;
+    formLabels[2].textContent = t.contact.subject;
+    formLabels[3].textContent = t.contact.message;
+    
+    document.querySelector('#contact-form button').textContent = t.contact.sendMessage;
+    
+    // Footer
+    document.querySelector('.footer p').textContent = t.footer.copyright;
+}
+
 // Function to set language
 function setLanguage(lang) {
     // Remove active class from all options
@@ -290,6 +417,9 @@ function setLanguage(lang) {
         localStorage.setItem('language', 'en');
         document.querySelector('[data-lang="en"]').classList.add('active');
     }
+    
+    // Translate the page content
+    translatePage(lang);
 }
 
 // Initialize language
